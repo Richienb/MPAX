@@ -1,10 +1,12 @@
-import os
-import pytest
-import requests
-from pathlib import Path
 import gzip
+import os
 import shutil
+import urllib.error
+import urllib.request
 import zipfile
+from pathlib import Path
+
+import pytest
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -25,13 +27,11 @@ def ensure_downloaded_and_extracted():
         if not file_path.exists():
             print(f"Downloading '{filename}'...")
             try:
-                with requests.get(url, stream=True) as response:
-                    response.raise_for_status()
+                with urllib.request.urlopen(url) as response:
                     with open(file_path, "wb") as file:
-                        for chunk in response.iter_content(chunk_size=8192):
-                            file.write(chunk)
+                        shutil.copyfileobj(response, file)
                 print(f"File '{filename}' downloaded successfully.")
-            except requests.exceptions.RequestException as e:
+            except urllib.error.URLError as e:
                 pytest.exit(f"Failed to download '{filename}': {e}")
         else:
             print(f"File '{filename}' already exists. Skipping download.")
